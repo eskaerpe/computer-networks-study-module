@@ -3,333 +3,301 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import { 
+  BookOpen, 
+  HelpCircle, 
+  Layers, 
+  ChevronRight, 
+  CheckCircle2, 
+  XCircle, 
+  RotateCcw,
+  Moon,
+  Sun,
+  Menu,
+  X,
+  Sparkles,
+  Award,
+  ArrowRight,
+  ArrowLeft
+} from 'lucide-react';
 
-interface ModuleSesi {
-  id: string;
-  title: string;
-  subtitle: string;
-  file: string;
-  tag: string;
+interface Question {
+  id: number;
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
 }
 
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
+interface Flashcard {
+  id: number;
+  front: string;
+  back: string;
+  category: string;
 }
 
-const SESI_LIST: ModuleSesi[] = [
+const quizData: Question[] = [
   {
-    id: 'sesi1',
-    title: 'Sesi 01: Pengantar Jaringan & Komunikasi Data',
-    subtitle: 'Arsitektur Jaringan, Topologi, Model OSI & TCP/IP, Protokol & Standardisasi',
-    file: '/computer-networks-study-module/content/sesi1.md',
-    tag: 'Sesi 1'
+    id: 1,
+    question: "Karakteristik efektivitas komunikasi data yang mengukur variasi dalam waktu kedatangan paket data disebut...",
+    options: ["Accuracy", "Delivery", "Jitter", "Timeliness"],
+    correct: 2,
+    explanation: "Jitter adalah ukuran variasi keterlambatan (delay) kedatangan paket data secara berurutan, yang sangat berpengaruh pada streaming audio/video real-time."
+  },
+  {
+    id: 2,
+    question: "Perangkat Switch beroperasi pada lapisan (layer) ke berapa dalam model TCP/IP?",
+    options: ["Layer 1 dan Layer 2", "Layer 2 dan Layer 3", "Layer 3 saja", "Layer 1 sampai Layer 5"],
+    correct: 0,
+    explanation: "Switch standar beroperasi pada Layer 1 (Physical) dan Layer 2 (Data Link) untuk meneruskan frame berdasarkan MAC Address di dalam satu LAN."
+  },
+  {
+    id: 3,
+    question: "Unit data protokol (PDU) pada Transport Layer dalam arsitektur TCP/IP dinamakan...",
+    options: ["Message", "Frame", "Bits", "Segment / User Datagram"],
+    correct: 3,
+    explanation: "Pada Transport Layer, data dari Application Layer dibungkus dengan header H4 (Port Addressing) menjadi Segment (TCP) atau User Datagram (UDP)."
+  },
+  {
+    id: 4,
+    question: "Berapa jumlah total kabel fisik yang dibutuhkan untuk menghubungkan 6 perangkat dalam topologi Full Mesh?",
+    options: ["6 kabel", "10 kabel", "15 kabel", "30 kabel"],
+    correct: 2,
+    explanation: "Rumus jumlah link fisik topologi Mesh adalah N(N - 1) / 2. Untuk 6 perangkat: (6 * 5) / 2 = 15 kabel."
+  },
+  {
+    id: 5,
+    question: "Manakah pernyataan yang BENAR mengenai perbedaan perutean Router vs Switch?",
+    options: [
+      "Router menggunakan MAC Address antar LAN, Switch menggunakan IP Address",
+      "Router beroperasi di Layer 1-3 untuk meneruskan paket antar subnet via IP Address, sedangkan Switch beroperasi di Layer 1-2 via MAC Address",
+      "Switch dapat mengarahkan paket ke internet global tanpa membutuhkan Router",
+      "Router tidak mengubah header Data Link saat meneruskan paket ke link berikutnya"
+    ],
+    correct: 1,
+    explanation: "Router bekerja hingga Layer 3 (Network) menggunakan logical IP Address untuk routing antar jaringan, sedangkan Switch bekerja di Layer 2 menggunakan physical MAC Address."
+  }
+];
+
+const flashcardsData: Flashcard[] = [
+  {
+    id: 1,
+    front: "Apa itu Jitter?",
+    back: "Variasi dalam waktu kedatangan (delay) antar paket data berurutan yang menyebabkan lag/ketidakteraturan pada transmisi audio/video.",
+    category: "Konsep Dasar"
+  },
+  {
+    id: 2,
+    front: "Perbedaan Switch vs Router (Layer Operation)",
+    back: "Switch bekerja di Layer 1-2 (Physical & Data Link) via MAC Address. Router bekerja di Layer 1-3 (Physical, Data Link & Network) via IP Address.",
+    category: "Perangkat Jaringan"
+  },
+  {
+    id: 3,
+    front: "PDU Tiap Layer TCP/IP",
+    back: "Layer 5 (App) = Message, Layer 4 (Transport) = Segment, Layer 3 (Network) = Packet/Datagram, Layer 2 (Data Link) = Frame, Layer 1 (Physical) = Bits.",
+    category: "Protokol & Layering"
+  },
+  {
+    id: 4,
+    front: "Rumus Kabel Topologi Mesh",
+    back: "Total Link = N(N - 1) / 2. Jumlah port per perangkat = N - 1.",
+    category: "Topologi"
+  },
+  {
+    id: 5,
+    front: "Mengapa Butuh Protocol Layering?",
+    back: "Modularitas dan Separation of Concerns: mempermudah troubleshooting dan memungkinkan perubahan protokol di satu layer tanpa merusak layer lain.",
+    category: "Konsep Dasar"
   }
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'reading' | 'flashcards' | 'quiz'>('reading');
-  const [currentSesiId, setCurrentSesiId] = useState<string>('sesi1');
-  const [markdownContent, setMarkdownContent] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [toc, setToc] = useState<TocItem[]>([]);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-
-  // Flashcards state
-  const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
-  const [isFlipped, setIsFlipped] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'read' | 'flashcards' | 'quiz'>('read');
+  const [markdown, setMarkdown] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Quiz state
-  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
-  const [submittedQuiz, setSubmittedQuiz] = useState<boolean>(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [score, setScore] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
 
-  const activeSesi = SESI_LIST.find(s => s.id === currentSesiId) || SESI_LIST[0];
+  // Flashcards state
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    fetch(activeSesi.file)
+    fetch(`${import.meta.env.BASE_URL}content/sesi1.md`)
       .then(res => res.text())
       .then(text => {
-        setMarkdownContent(text);
-        
-        // Generate TOC from headings
-        const headings: TocItem[] = [];
-        const lines = text.split('\n');
-        lines.forEach((line) => {
-          if (line.startsWith('## ')) {
-            const headingText = line.replace('## ', '').trim();
-            const id = headingText.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-            headings.push({ id, text: headingText, level: 2 });
-          } else if (line.startsWith('### ')) {
-            const headingText = line.replace('### ', '').trim();
-            const id = headingText.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-            headings.push({ id, text: headingText, level: 3 });
-          }
-        });
-        setToc(headings);
+        setMarkdown(text);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to load markdown', err);
-        setMarkdownContent('# Gagal memuat materi\nSilakan coba lagi nanti.');
+        console.error("Error loading markdown:", err);
         setLoading(false);
       });
-  }, [currentSesiId]);
+  }, []);
 
-  const flashcardsData = [
-    { q: "Apa definisi Jaringan Komputer?", a: "Kumpulan dua atau lebih perangkat komputasi yang saling terhubung melalui media transmisi dan protokol standar untuk berbagi data, sumber daya, dan layanan." },
-    { q: "Sebutkan 5 komponen utama sistem komunikasi data!", a: "1. Message (Pesan)\n2. Sender (Pengirim)\n3. Receiver (Penerima)\n4. Transmission Medium (Media Transmisi)\n5. Protocol (Protokol)" },
-    { q: "Apa bedanya transmisi Simplex, Half-Duplex, dan Full-Duplex?", a: "Simplex: 1 arah (Radio).\nHalf-Duplex: 2 arah bergantian (Walkie-talkie).\nFull-Duplex: 2 arah simultan/bersamaan (Telepon/Ethernet)." },
-    { q: "Mengapa Topologi Star paling dominan digunakan pada LAN modern?", a: "Karena isolasi kerusakan per-kabel mudah (kabel putus tidak mematikan node lain) dan sentralisasi manajemen via Switch." },
-    { q: "Sebutkan 7 Layer pada OSI Model secara berurutan dari bawah ke atas!", a: "1. Physical, 2. Data Link, 3. Network, 4. Transport, 5. Session, 6. Presentation, 7. Application." },
-    { q: "Sebutkan 4 Layer pada TCP/IP Model!", a: "1. Network Access / Link, 2. Internet, 3. Transport, 4. Application." },
-    { q: "Apa fungsi utama dari Transport Layer (TCP vs UDP)?", a: "Menyediakan komunikasi end-to-end antar proses aplikasi. TCP handal & connection-oriented; UDP cepat, ringan & connectionless." },
-    { q: "Apa perbedaan mendasar antara Standar De Jure dan De Facto?", a: "De Jure: Standar resmi berbadan hukum (IEEE, ISO, IETF).\nDe Facto: Standar adopsi massal pasar tanpa sertifikasi awal resmi." }
-  ];
-
-  const quizData = [
-    {
-      question: "Manakah komponen komunikasi data yang berfungsi sebagai aturan baku penentu format dan sinkronisasi data?",
-      options: [
-        "Transmission Medium",
-        "Protocol",
-        "Sender Interface",
-        "Message Payload"
-      ],
-      correct: 1,
-      explanation: "Protokol adalah seperangkat aturan baku yang mengatur seluruh proses komunikasi data agar kedua belah pihak dapat saling mengerti format data yang dikirimkan."
-    },
-    {
-      question: "Topologi jaringan yang memiliki reliabilitas fault tolerance tertinggi namun memerlukan biaya instalasi kabel paling tinggi adalah...",
-      options: [
-        "Star Topology",
-        "Ring Topology",
-        "Mesh Topology (Full Mesh)",
-        "Bus Topology"
-      ],
-      correct: 2,
-      explanation: "Full Mesh menghubungkan setiap node ke seluruh node lainnya secara point-to-point (rumus N(N-1)/2 sambungan), memberikan redundansi maksimal namun paling boros kabel."
-    },
-    {
-      question: "Pada model OSI 7-Layer, enkripsi data, kompresi, dan penerjemahan format encoding (ASCII/UTF-8) terjadi pada layer...",
-      options: [
-        "Transport Layer",
-        "Session Layer",
-        "Presentation Layer",
-        "Application Layer"
-      ],
-      correct: 2,
-      explanation: "Presentation Layer bertanggung jawab atas sintaks dan semantik informasi yang dipertukarkan, termasuk data translation, enkripsi/dekripsi, dan kompresi."
-    },
-    {
-      question: "Apa kelemahan utama dari topologi Bus tradisional?",
-      options: [
-        "Membutuhkan perangkat Switch yang mahal",
-        "Jika kabel backbone utama (bus) putus, seluruh jaringan akan lumpuh",
-        "Tidak mendukung transmisi sinyal digital",
-        "Memerlukan konfigurasi routing yang rumit di tiap host"
-      ],
-      correct: 1,
-      explanation: "Topologi Bus memiliki Single Point of Failure pada backbone kabel utamanya. Jika kabel bus terputus, refleksi sinyal merusak transmisi seluruh workstation."
-    },
-    {
-      question: "Protokol TCP berada pada layer apa dalam arsitektur TCP/IP 4-Layer?",
-      options: [
-        "Network Access Layer",
-        "Internet Layer",
-        "Transport Layer",
-        "Application Layer"
-      ],
-      correct: 2,
-      explanation: "TCP (Transmission Control Protocol) dan UDP beroperasi pada Transport Layer untuk menyediakan layanan transfer data host-to-host."
+  const handleAnswerSelect = (index: number) => {
+    if (selectedAnswer !== null) return;
+    setSelectedAnswer(index);
+    setShowExplanation(true);
+    if (index === quizData[currentQuestion].correct) {
+      setScore(prev => prev + 1);
     }
-  ];
-
-  const handleQuizOptionSelect = (qIdx: number, optIdx: number) => {
-    if (submittedQuiz) return;
-    setQuizAnswers(prev => ({ ...prev, [qIdx]: optIdx }));
   };
 
-  const calculateQuizScore = () => {
-    let score = 0;
-    quizData.forEach((q, idx) => {
-      if (quizAnswers[idx] === q.correct) score++;
-    });
-    return score;
+  const nextQuestion = () => {
+    if (currentQuestion < quizData.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+    } else {
+      setQuizCompleted(true);
+    }
+  };
+
+  const resetQuiz = () => {
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    setScore(0);
+    setQuizCompleted(false);
+  };
+
+  const nextCard = () => {
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentCardIndex((prev) => (prev + 1) % flashcardsData.length);
+    }, 150);
+  };
+
+  const prevCard = () => {
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentCardIndex((prev) => (prev - 1 + flashcardsData.length) % flashcardsData.length);
+    }, 150);
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0c0e] text-[#e2e8f0] flex flex-col font-sans overflow-x-hidden">
+    <div className={`min-h-screen ${darkMode ? 'dark bg-[#0b0c0e] text-zinc-100' : 'bg-slate-50 text-slate-900'} flex flex-col font-sans transition-colors duration-200`}>
       {/* Top Navbar */}
-      <header className="sticky top-0 z-50 bg-[#0d0e11]/95 backdrop-blur-md border-b border-white/[0.08] px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3.5 bg-white/80 dark:bg-[#0b0c0e]/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-1.5 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md bg-emerald-600 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-emerald-500/20 shrink-0">
-              CN
+            <div className="p-2 rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400">
+              <Sparkles size={18} />
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <span className="text-xs sm:text-sm font-semibold text-slate-100 truncate">COMP6047 • Computer Networks</span>
-              <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded self-start sm:self-auto">BINUS</span>
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Study Module</span>
+              <h1 className="text-sm font-bold text-slate-800 dark:text-zinc-200">Computer Networks (Sesi 01)</h1>
             </div>
           </div>
+        </div>
 
-          {/* Mobile Drawer Button */}
+        {/* View Mode Navigation Tabs */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-800">
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="sm:hidden px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.1] text-xs font-mono text-slate-300"
+            onClick={() => setActiveTab('read')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'read'
+                ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+            }`}
           >
-            {mobileMenuOpen ? '✕ Close' : '☰ Menu'}
+            <BookOpen size={14} />
+            <span className="hidden sm:inline">Materi Baca</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('flashcards')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'flashcards'
+                ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            <Layers size={14} />
+            <span className="hidden sm:inline">Flashcards</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('quiz')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'quiz'
+                ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            <HelpCircle size={14} />
+            <span className="hidden sm:inline">Kuis Interaktif</span>
           </button>
         </div>
 
-        {/* Action Toggle Switch */}
-        <div className="flex items-center justify-center bg-[#15171c] p-1 rounded-lg border border-white/[0.08] w-full sm:w-auto">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setActiveTab('reading')}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              activeTab === 'reading'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            title="Toggle Dark Mode"
           >
-            📖 Reading
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('flashcards');
-              setCurrentCardIndex(0);
-              setIsFlipped(false);
-            }}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              activeTab === 'flashcards'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            🎴 Flashcards
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('quiz');
-              setSubmittedQuiz(false);
-              setQuizAnswers({});
-            }}
-            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              activeTab === 'quiz'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            🧠 Quiz
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
         </div>
       </header>
 
-      {/* Mobile Drawer Bar */}
-      {mobileMenuOpen && (
-        <div className="sm:hidden bg-[#12141a] border-b border-white/[0.1] px-4 py-4 space-y-4">
-          <div>
-            <h3 className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Pilih Modul Sesi</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {SESI_LIST.map(sesi => (
-                <button
-                  key={sesi.id}
-                  onClick={() => {
-                    setCurrentSesiId(sesi.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between border ${
-                    currentSesiId === sesi.id
-                      ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40'
-                      : 'bg-white/[0.02] border-white/[0.05] text-slate-400'
-                  }`}
-                >
-                  <span>{sesi.title}</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05]">{sesi.tag}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {activeTab === 'reading' && toc.length > 0 && (
-            <div>
-              <h3 className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">Jump to Section</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {toc.map((item, idx) => (
-                  <a
-                    key={idx}
-                    href={`#${item.id}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-[11px] bg-white/[0.04] border border-white/[0.08] text-slate-300 px-2 py-1 rounded hover:border-emerald-500/50"
-                  >
-                    {item.text}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 3-Column Mintlify Documentation Body */}
-      <div className="flex-1 flex max-w-[1440px] w-full mx-auto">
-        {/* Left Column: Module Directory Navigation (Desktop) */}
-        <aside className="w-64 border-r border-white/[0.08] p-5 shrink-0 hidden lg:flex flex-col gap-6 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
-          <div>
-            <h2 className="text-[11px] font-mono uppercase tracking-wider text-slate-500 mb-3">Daftar Modul</h2>
+      {/* Main 3-Column Container */}
+      <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
+        {/* Left Sidebar: Session List */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-20 w-64 bg-white dark:bg-[#0b0c0e] border-r border-slate-200 dark:border-zinc-800 p-5 pt-20 md:pt-6 md:static md:block transition-transform duration-200
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
+          <div className="mb-6">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-3">Daftar Modul</h3>
             <div className="space-y-1">
-              {SESI_LIST.map(sesi => (
-                <button
-                  key={sesi.id}
-                  onClick={() => setCurrentSesiId(sesi.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all flex items-center justify-between ${
-                    currentSesiId === sesi.id
-                      ? 'bg-emerald-600/15 text-emerald-400 border border-emerald-500/30'
-                      : 'text-slate-400 hover:bg-white/[0.03] hover:text-slate-200'
-                  }`}
-                >
-                  <span className="truncate">{sesi.title}</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400">{sesi.tag}</span>
-                </button>
-              ))}
+              <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40">
+                <span className="truncate">Sesi 01: Intro & TCP/IP</span>
+                <ChevronRight size={14} />
+              </button>
+              <button disabled className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-400 dark:text-zinc-600 cursor-not-allowed opacity-60">
+                <span className="truncate">Sesi 02: Network Layer (Next)</span>
+              </button>
             </div>
           </div>
 
-          <div className="mt-auto p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-slate-400 space-y-1">
-            <span className="font-semibold text-slate-300">Format Pembelajaran</span>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              Disusun dengan 5-part pedagogy: Landasan Teori, Intuisi Analogi, Topologi & Layering, Strategi Pemecahan Kasus, dan Evaluasi Bank Soal.
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-zinc-800">
+            <h4 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Target Pembelajaran</h4>
+            <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
+              Memahami 5 komponen data comms, 5-layer TCP/IP vs 7-layer OSI, serta fungsi switch vs router.
             </p>
           </div>
         </aside>
 
-        {/* Center Column: Reading Lane / Main Content */}
-        <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 max-w-4xl mx-auto w-full">
-          {activeTab === 'reading' && (
-            <div>
+        {/* Center Lane: Content Renderer */}
+        <main className="flex-1 min-w-0 px-6 py-8 md:px-12 md:py-10">
+          {activeTab === 'read' && (
+            <div className="max-w-4xl mx-auto">
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-500">
-                  <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-xs font-mono">Memuat materi markdown...</span>
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500">Memuat materi kuliah...</p>
                 </div>
               ) : (
                 <article className="doc-prose">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeKatex]}
-                    components={{
-                      h2: ({ node, ...props }) => {
-                        const id = String(props.children).toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-                        return <h2 id={id} {...props} />;
-                      },
-                      h3: ({ node, ...props }) => {
-                        const id = String(props.children).toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-                        return <h3 id={id} {...props} />;
-                      }
-                    }}
                   >
-                    {markdownContent}
+                    {markdown}
                   </ReactMarkdown>
                 </article>
               )}
@@ -337,163 +305,215 @@ export default function App() {
           )}
 
           {activeTab === 'flashcards' && (
-            <div className="flex flex-col items-center justify-center py-6 sm:py-12">
-              <div className="w-full max-w-lg space-y-6">
-                <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
-                  <span>Kartu {currentCardIndex + 1} / {flashcardsData.length}</span>
-                  <span className="text-emerald-400">{activeSesi.title}</span>
-                </div>
+            <div className="max-w-xl mx-auto py-10 flex flex-col items-center">
+              <div className="text-center mb-6">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Flashcard Review</span>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100 mt-1">Konsep Kunci Jaringan</h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                  Kartu {currentCardIndex + 1} dari {flashcardsData.length} &bull; Klik kartu untuk membalik
+                </p>
+              </div>
 
-                <div
-                  onClick={() => setIsFlipped(!isFlipped)}
-                  className="w-full min-h-[240px] bg-[#12141a] border border-white/[0.1] hover:border-emerald-500/40 rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 text-center shadow-xl relative"
+              {/* 3D Flip Card */}
+              <div 
+                onClick={() => setIsFlipped(!isFlipped)}
+                className="w-full h-80 cursor-pointer perspective-1000 mb-6 group"
+              >
+                <div className={`relative w-full h-full rounded-2xl transition-transform duration-500 transform-style-3d border border-slate-200 dark:border-zinc-800 shadow-xl ${
+                  isFlipped ? 'rotate-y-180' : ''
+                }`}>
+                  {/* Front Side */}
+                  <div className="absolute inset-0 bg-white dark:bg-zinc-900 rounded-2xl p-8 flex flex-col justify-between backface-hidden">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                      {flashcardsData[currentCardIndex].category}
+                    </span>
+                    <div className="text-center my-auto">
+                      <p className="text-lg md:text-xl font-bold text-slate-800 dark:text-zinc-100 leading-snug">
+                        {flashcardsData[currentCardIndex].front}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs font-medium text-blue-500 dark:text-blue-400 flex items-center justify-center gap-1.5">
+                        <RotateCcw size={13} /> Klik untuk lihat jawaban
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Back Side */}
+                  <div className="absolute inset-0 bg-blue-600 text-white rounded-2xl p-8 flex flex-col justify-between backface-hidden rotate-y-180 shadow-2xl">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-200">
+                      Jawaban / Penjelasan
+                    </span>
+                    <div className="text-center my-auto">
+                      <p className="text-base md:text-lg font-medium leading-relaxed text-blue-50">
+                        {flashcardsData[currentCardIndex].back}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs font-medium text-blue-200">
+                        Klik untuk kembali ke pertanyaan
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={prevCard}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all shadow-sm"
                 >
-                  <span className="absolute top-3 right-3 text-[10px] uppercase font-mono text-slate-500 bg-white/[0.05] px-2 py-0.5 rounded">
-                    {isFlipped ? 'Jawaban' : 'Pertanyaan'}
-                  </span>
-                  
-                  <p className={`text-sm sm:text-base font-medium leading-relaxed whitespace-pre-line ${isFlipped ? 'text-emerald-300' : 'text-slate-100'}`}>
-                    {isFlipped ? flashcardsData[currentCardIndex].a : flashcardsData[currentCardIndex].q}
-                  </p>
-
-                  <span className="absolute bottom-3 text-[11px] text-slate-500">
-                    Klik untuk membalik kartu
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <button
-                    disabled={currentCardIndex === 0}
-                    onClick={() => {
-                      setCurrentCardIndex(prev => prev - 1);
-                      setIsFlipped(false);
-                    }}
-                    className="px-4 py-2 rounded-md bg-white/[0.05] border border-white/[0.08] text-xs font-medium text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/[0.08]"
-                  >
-                    ← Sebelumnya
-                  </button>
-                  <button
-                    disabled={currentCardIndex === flashcardsData.length - 1}
-                    onClick={() => {
-                      setCurrentCardIndex(prev => prev + 1);
-                      setIsFlipped(false);
-                    }}
-                    className="px-4 py-2 rounded-md bg-emerald-600 text-white text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-emerald-500"
-                  >
-                    Selanjutnya →
-                  </button>
-                </div>
+                  <ArrowLeft size={14} /> Sebelumnya
+                </button>
+                <button
+                  onClick={nextCard}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md"
+                >
+                  Selanjutnya <ArrowRight size={14} />
+                </button>
               </div>
             </div>
           )}
 
           {activeTab === 'quiz' && (
-            <div className="space-y-6 max-w-2xl mx-auto py-2 sm:py-4">
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-100 mb-1">Evaluasi Pemahaman - {activeSesi.title}</h2>
-                <p className="text-xs text-slate-400">Jawab seluruh pertanyaan berikut untuk menguji pemahaman konsep.</p>
-              </div>
-
-              <div className="space-y-5">
-                {quizData.map((q, qIdx) => (
-                  <div key={qIdx} className="p-4 sm:p-5 rounded-xl bg-[#12141a] border border-white/[0.08] space-y-4">
-                    <h3 className="text-xs sm:text-sm font-medium text-slate-200 flex gap-2">
-                      <span className="text-emerald-400 font-mono">{qIdx + 1}.</span> {q.question}
-                    </h3>
-
-                    <div className="space-y-2">
-                      {q.options.map((opt, optIdx) => {
-                        const isSelected = quizAnswers[qIdx] === optIdx;
-                        const isCorrect = q.correct === optIdx;
-                        let optionStyle = "bg-white/[0.02] border-white/[0.06] text-slate-300 hover:bg-white/[0.05]";
-
-                        if (submittedQuiz) {
-                          if (isCorrect) {
-                            optionStyle = "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-medium";
-                          } else if (isSelected) {
-                            optionStyle = "bg-rose-500/15 border-rose-500/40 text-rose-300";
-                          }
-                        } else if (isSelected) {
-                          optionStyle = "bg-emerald-600/20 border-emerald-500 text-white font-medium";
-                        }
-
-                        return (
-                          <button
-                            key={optIdx}
-                            onClick={() => handleQuizOptionSelect(qIdx, optIdx)}
-                            className={`w-full text-left p-3 rounded-lg border text-xs transition-all flex items-center justify-between ${optionStyle}`}
-                          >
-                            <span>{opt}</span>
-                            {submittedQuiz && isCorrect && <span className="text-xs">✓ Benar</span>}
-                            {submittedQuiz && isSelected && !isCorrect && <span className="text-xs">✗ Salah</span>}
-                          </button>
-                        );
-                      })}
+            <div className="max-w-2xl mx-auto py-8">
+              {!quizCompleted ? (
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 md:p-8 shadow-sm">
+                  {/* Quiz Header */}
+                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Interactive Quiz</span>
+                      <h2 className="text-base font-bold text-slate-800 dark:text-zinc-100">Evaluasi Pemahaman Sesi 01</h2>
                     </div>
-
-                    {submittedQuiz && (
-                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-slate-300 space-y-1">
-                        <span className="font-semibold text-emerald-400">Penjelasan:</span>
-                        <p>{q.explanation}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-white/[0.08]">
-                {submittedQuiz ? (
-                  <div className="flex items-center gap-4">
-                    <span className="text-xs sm:text-sm font-semibold text-white">
-                      Skor: <span className="text-emerald-400 font-mono">{calculateQuizScore()} / {quizData.length}</span>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
+                      Soal {currentQuestion + 1} / {quizData.length}
                     </span>
+                  </div>
+
+                  {/* Question */}
+                  <p className="text-sm md:text-base font-semibold text-slate-800 dark:text-zinc-100 mb-6 leading-relaxed">
+                    {quizData[currentQuestion].question}
+                  </p>
+
+                  {/* Options */}
+                  <div className="space-y-3 mb-6">
+                    {quizData[currentQuestion].options.map((option, idx) => {
+                      let btnStyle = "bg-slate-50 dark:bg-zinc-800/60 border-slate-200/80 dark:border-zinc-700/60 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800";
+                      
+                      if (selectedAnswer !== null) {
+                        if (idx === quizData[currentQuestion].correct) {
+                          btnStyle = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-semibold";
+                        } else if (idx === selectedAnswer) {
+                          btnStyle = "bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-700 dark:text-rose-300";
+                        } else {
+                          btnStyle = "opacity-50 bg-slate-50 dark:bg-zinc-800/30 border-slate-200 dark:border-zinc-800";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleAnswerSelect(idx)}
+                          disabled={selectedAnswer !== null}
+                          className={`w-full text-left p-4 rounded-xl border text-xs md:text-sm transition-all flex items-start justify-between gap-3 ${btnStyle}`}
+                        >
+                          <span>{option}</span>
+                          {selectedAnswer !== null && idx === quizData[currentQuestion].correct && (
+                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                          )}
+                          {selectedAnswer !== null && idx === selectedAnswer && idx !== quizData[currentQuestion].correct && (
+                            <XCircle size={16} className="text-rose-500 shrink-0 mt-0.5" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Explanation Callout */}
+                  {showExplanation && (
+                    <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 mb-6">
+                      <h4 className="text-xs font-bold text-blue-800 dark:text-blue-300 mb-1">Penjelasan:</h4>
+                      <p className="text-xs text-blue-700 dark:text-blue-200 leading-relaxed">
+                        {quizData[currentQuestion].explanation}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Next Question Button */}
+                  {selectedAnswer !== null && (
                     <button
-                      onClick={() => {
-                        setSubmittedQuiz(false);
-                        setQuizAnswers({});
-                      }}
-                      className="px-3.5 py-1.5 rounded-md bg-white/[0.06] hover:bg-white/[0.1] text-xs font-medium text-white"
+                      onClick={nextQuestion}
+                      className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all shadow-md flex items-center justify-center gap-2"
                     >
-                      Ulangi Kuis
+                      {currentQuestion < quizData.length - 1 ? 'Soal Berikutnya' : 'Lihat Hasil Kuis'}
+                      <ChevronRight size={15} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                /* Result Screen */
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-8 text-center shadow-sm">
+                  <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Award size={28} />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-zinc-100 mb-1">Kuis Selesai!</h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mb-6">
+                    Berikut adalah hasil penilaian pemahamanmu:
+                  </p>
+
+                  <div className="p-6 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200/80 dark:border-zinc-700/60 inline-block mb-6 min-w-[200px]">
+                    <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
+                      {score} / {quizData.length}
+                    </span>
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 mt-1">
+                      Skor Akhir: {Math.round((score / quizData.length) * 100)}%
+                    </p>
+                  </div>
+
+                  <div>
+                    <button
+                      onClick={resetQuiz}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all shadow-md"
+                    >
+                      <RotateCcw size={14} /> Ulangi Kuis
                     </button>
                   </div>
-                ) : (
-                  <button
-                    disabled={Object.keys(quizAnswers).length < quizData.length}
-                    onClick={() => setSubmittedQuiz(true)}
-                    className="ml-auto px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-500/20"
-                  >
-                    Kirim Jawaban
-                  </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </main>
 
-        {/* Right Column: On-Page Table of Contents (Desktop) */}
-        {activeTab === 'reading' && (
-          <aside className="w-60 border-l border-white/[0.08] p-5 shrink-0 hidden xl:block sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
-            <h2 className="text-[11px] font-mono uppercase tracking-wider text-slate-500 mb-3">On This Page</h2>
-            <nav className="space-y-1.5 text-xs">
-              {toc.length > 0 ? (
-                toc.map((item, idx) => (
-                  <a
-                    key={idx}
-                    href={`#${item.id}`}
-                    className={`block truncate transition-colors ${
-                      item.level === 3 ? 'pl-3 text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-emerald-400 font-medium'
-                    }`}
-                  >
-                    {item.text}
-                  </a>
-                ))
-              ) : (
-                <span className="text-slate-600 text-[11px]">Tidak ada section.</span>
-              )}
-            </nav>
-          </aside>
-        )}
+        {/* Right Sidebar: Quick Reference / Concept Highlights */}
+        <aside className="hidden xl:block w-72 p-6 border-l border-slate-200 dark:border-zinc-800 text-xs">
+          <h4 className="font-bold text-slate-800 dark:text-zinc-200 uppercase tracking-wider text-[11px] mb-4">
+            Ringkasan Konsep
+          </h4>
+          
+          <div className="space-y-4 text-slate-600 dark:text-zinc-400">
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+              <span className="font-semibold text-slate-800 dark:text-zinc-200 block mb-1">4 Kriteria Data Comms</span>
+              <p className="text-[11px]">Delivery, Accuracy, Timeliness, Jitter.</p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+              <span className="font-semibold text-slate-800 dark:text-zinc-200 block mb-1">PDU Tiap Layer</span>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                <li>App: Message</li>
+                <li>Transport: Segment</li>
+                <li>Network: Packet</li>
+                <li>Data Link: Frame</li>
+                <li>Physical: Bits</li>
+              </ul>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800">
+              <span className="font-semibold text-slate-800 dark:text-zinc-200 block mb-1">Rumus Mesh Topology</span>
+              <p className="text-[11px] font-mono text-blue-600 dark:text-blue-400">Link = N(N-1) / 2</p>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
